@@ -26,19 +26,21 @@
         // Make sure functions or other non-JSON data types are stripped down.
         json = parse(stringify(json));
 		
-        var K = function() {},
-            onchange = options.change || K;
+        var K = function () { },
+            onchange = options.change || K,
+            onvalchange = options.valchange || K;
 
         return this.each(function() {
-            JSONEditor($(this), json, onchange, options.propertyElement, options.valueElement);
+            JSONEditor($(this), json, onchange, onvalchange, options.propertyElement, options.valueElement);
         });
 
     };
 
-    function JSONEditor(target, json, onchange, propertyElement, valueElement) {
+    function JSONEditor(target, json, onchange, onvalchange, propertyElement, valueElement) {
         var opt = {
             target: target,
             onchange: onchange,
+            onvalchange: onvalchange,
             original: json,
             propertyElement: propertyElement,
             valueElement: valueElement
@@ -204,6 +206,8 @@
                 val = parse($(this).val() || 'null'),
                 item = $(this).parent(),
                 path = item.data('path');
+
+            opt.onvalchange((path ? path + '.' : '') + key, val);
 
             feed(opt.original, (path ? path + '.' : '') + key, val);
             if ((isObject(val) || isArray(val)) && !$.isEmptyObject(val)) {
