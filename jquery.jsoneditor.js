@@ -161,13 +161,11 @@
             if (isBoolean(json[key]))
             {
                 value[0].type = 'checkbox';
-                value.val(json[key]).attr('title', stringify(json[key]));
+                value[0].checked = json[key];
             }
-            else
-            {
-                var val = stringify(json[key]);
-                value.val(val).attr('title', val);
-            }
+
+            var val = stringify(json[key]);
+            value.val(val).attr('title', val);
 
             assignType(item, json[key]);
 
