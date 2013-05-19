@@ -157,8 +157,17 @@
             root.append(item);
 
             property.val(key).attr('title', key);
-            var val = stringify(json[key]);
-            value.val(val).attr('title', val);
+
+            if (isBoolean(json[key]))
+            {
+                value[0].type = 'checkbox';
+                value.val(json[key]).attr('title', stringify(json[key]));
+            }
+            else
+            {
+                var val = stringify(json[key]);
+                value.val(val).attr('title', val);
+            }
 
             assignType(item, json[key]);
 
@@ -206,6 +215,9 @@
                 val = parse($(this).val() || 'null'),
                 item = $(this).parent(),
                 path = item.data('path');
+
+            if (this.type == 'checkbox')
+                val = this.checked;
 
             opt.onvalchange((path ? path + '.' : '') + key, val);
 
