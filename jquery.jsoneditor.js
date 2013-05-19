@@ -22,18 +22,19 @@
 
     $.fn.jsonEditor = function(json, options) {
         options = options || {};
+
         // Make sure functions or other non-JSON data types are stripped down.
         json = parse(stringify(json));
-        
+		
         var K = function() {},
             onchange = options.change || K;
 
         return this.each(function() {
             JSONEditor($(this), json, onchange, options.propertyElement, options.valueElement);
         });
-        
+
     };
-    
+
     function JSONEditor(target, json, onchange, propertyElement, valueElement) {
         var opt = {
             target: target,
@@ -61,7 +62,7 @@
     //      feed({}, 'foo.bar.baz', 10);    // returns { foo: { bar: { baz: 10 } } }
     function feed(o, path, value) {
         var del = arguments.length == 2;
-        
+
         if (path.indexOf('.') > -1) {
             var diver = o,
                 i = 0,
@@ -92,7 +93,7 @@
     }
 
     function error(reason) { if (window.console) { console.error(reason); } }
-    
+
     function parse(str) {
         var res;
         try { res = JSON.parse(str); }
@@ -106,7 +107,7 @@
         catch (e) { res = 'null'; error('JSON stringify failed.'); }
         return res;
     }
-    
+
     function addExpander(item) {
         if (item.children('.expander').length == 0) {
             var expander =   $('<span>',  { 'class': 'expander' });
@@ -117,26 +118,42 @@
             item.prepend(expander);
         }
     }
-    
+
     function construct(opt, json, root, path) {
         path = path || '';
-        
+        var expanded = {};
+        root.find('.item').each(function () {
+            if ($(this).hasClass('expanded')) {
+                var path = $(this).data('path');
+                var full_path = (path ? path + '.' : path) + $(this).children('.property').val();
+                expanded[full_path] = true;
+            }
+        });
+
+        doConstruct(opt, json, root, path, expanded);
+    }
+
+    function doConstruct(opt, json, root, path, expanded) {
         root.children('.item').remove();
-        
+
         for (var key in json) {
             if (!json.hasOwnProperty(key)) continue;
 
             var item     = $('<div>',   { 'class': 'item', 'data-path': path }),
                 property =   $(opt.propertyElement || '<input>', { 'class': 'property' }),
-                value    =   $(opt.valueElement || '<input>', { 'class': 'value'    });
+                value    =   $(opt.valueElement || '<input>', { 'class': 'value'    }),
+                full_path = (path ? path + '.' : path) + key;
 
             if (isObject(json[key]) || isArray(json[key])) {
                 addExpander(item);
+                if (full_path in expanded) {
+                    item.addClass('expanded');
+                }
             }
-            
+
             item.append(property).append(value);
             root.append(item);
-            
+
             property.val(key).attr('title', key);
             var val = stringify(json[key]);
             value.val(val).attr('title', val);
@@ -145,9 +162,9 @@
 
             property.change(propertyChanged(opt));
             value.change(valueChanged(opt));
-            
+
             if (isObject(json[key]) || isArray(json[key])) {
-                construct(opt, json[key], item, (path ? path + '.' : '') + key);
+                doConstruct(opt, json[key], item, full_path, expanded);
             }
         }
     }
@@ -176,7 +193,7 @@
             updateParents(this, opt);
 
             if (!newKey) $(this).parent().remove();
-            
+
             opt.onchange();
         };
     }
@@ -199,14 +216,14 @@
             assignType(item, val);
 
             updateParents(this, opt);
-            
+
             opt.onchange();
         };
     }
-    
+
     function assignType(item, val) {
         var className = 'null';
-        
+
         if (isObject(val)) className = 'object';
         else if (isArray(val)) className = 'array';
         else if (isBoolean(val)) className = 'boolean';
