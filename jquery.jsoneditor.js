@@ -217,7 +217,7 @@
             if (this.type == 'checkbox')
                 val = this.checked;
 
-            opt.onvalchange((path ? path + '.' : '') + key, val);
+            opt.onvalchange((path ? path + '.' : '') + key, val, opt.original);
 
             feed(opt.original, (path ? path + '.' : '') + key, val);
             if ((isObject(val) || isArray(val)) && !$.isEmptyObject(val)) {
