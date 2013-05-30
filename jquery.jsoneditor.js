@@ -137,6 +137,11 @@
 
     function doConstruct(opt, json, root, path, expanded) {
         root.children('.item').remove();
+        doConstruct2(opt, json, root, path, expanded);
+    }
+
+    function doConstruct2(opt, json, root, path, expanded) {
+        root.children('.adder').remove();
 
         for (var key in json) {
             if (!json.hasOwnProperty(key)) continue;
@@ -174,6 +179,14 @@
 
             if (isObject(json[key]) || isArray(json[key])) {
                 doConstruct(opt, json[key], item, full_path, expanded);
+
+                var adder = $('<div>', { 'class': 'adder', 'data-path': full_path });
+                adder.bind('click', function () {
+                    var theParent = $(this).parent()
+                    doConstruct2(opt, { "": "" }, theParent, $(this).data('path'), true);
+                    theParent.append(this);
+                });
+                item.append(adder);
             }
         }
     }
