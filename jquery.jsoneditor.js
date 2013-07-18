@@ -143,7 +143,18 @@
     function doConstruct2(opt, json, root, path, expanded) {
         root.children('.adder').remove();
 
-        for (var key in json) {
+        var sorted_keys = Object.keys(json).sort(function (a, b) {
+            if (a == "Global") return -1;
+            if (b == "Global") return 1;
+            if (a == "Enable") return -1;
+            if (b == "Enable") return 1;
+            if (a < b) return -1;
+            return 1;
+        });
+        var keys_len = sorted_keys.length;
+
+        for (var i = 0; i < keys_len; i++) {
+            var key = sorted_keys[i];
             if (!json.hasOwnProperty(key)) continue;
 
             var item     = $('<div>',   { 'class': 'item', 'data-path': path }),
