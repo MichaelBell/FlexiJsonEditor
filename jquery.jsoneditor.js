@@ -2,6 +2,7 @@
 // Turns any element into a stylable interactive JSON editor.
 
 // Copyright (c) 2011 David Durman
+// Changes Copyright (C) 2013 Intelligent Artefacts Ltd
 
 // Licensed under the MIT license (http://www.opensource.org/licenses/mit-license.php).
 
