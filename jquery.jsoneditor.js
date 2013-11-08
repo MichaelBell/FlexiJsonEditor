@@ -128,7 +128,7 @@
         root.find('.item').each(function () {
             if ($(this).hasClass('expanded')) {
                 var path = $(this).data('path');
-                var full_path = (path ? path + '.' : path) + $(this).children('.property').val();
+                var full_path = (path ? path + '.' : path) + $(this).children('.property').attr('title');
                 expanded[full_path] = true;
             }
         });
@@ -158,6 +158,15 @@
             var key = sorted_keys[i];
             if (!json.hasOwnProperty(key)) continue;
 
+            var displayKey = key;
+            if (key.indexOf('.') != -1)
+            {
+                var newKey = key.replace(/\./g, '\t');
+                json[newKey] = json[key];
+                delete json[key];
+                key = newKey;
+            }
+
             var item     = $('<div>',   { 'class': 'item', 'data-path': path }),
                 property =   $(opt.propertyElement || '<input>', { 'class': 'property' }),
                 value    =   $(opt.valueElement || '<input>', { 'class': 'value'    }),
@@ -173,7 +182,7 @@
             item.append(property).append(value);
             root.append(item);
 
-            property.val(key).attr('title', key);
+            property.val(displayKey).attr('title', key);
 
             if (isBoolean(json[key]))
             {
