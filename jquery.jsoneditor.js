@@ -30,18 +30,20 @@
         var K = function () { },
             onchange = options.change || K,
             onvalchange = options.valchange || K;
+            onexpandchange = options.expandchange || K;
 
         return this.each(function() {
-            JSONEditor($(this), json, onchange, onvalchange, options.propertyElement, options.valueElement);
+            JSONEditor($(this), json, onchange, onvalchange, onexpandchange, options.propertyElement, options.valueElement);
         });
 
     };
 
-    function JSONEditor(target, json, onchange, onvalchange, propertyElement, valueElement) {
+    function JSONEditor(target, json, onchange, onvalchange, onexpandchange, propertyElement, valueElement) {
         var opt = {
             target: target,
             onchange: onchange,
             onvalchange: onvalchange,
+            onexpandchange: onexpandchange,
             original: json,
             propertyElement: propertyElement,
             valueElement: valueElement
@@ -111,12 +113,16 @@
         return res;
     }
 
-    function addExpander(item) {
+    function addExpander(item, opt) {
         if (item.children('.expander').length == 0) {
             var expander =   $('<span>',  { 'class': 'expander' });
             expander.bind('click', function() {
-                var item = $(this).parent();
+                var key = item.children('.property').attr('title'),
+                    val = parse(item.children('.value').attr('title') || 'null'),
+                    path = item.data('path');
+
                 item.toggleClass('expanded');
+                opt.onexpandchange(item.hasClass('expanded'), (path ? path + '.' : '') + key, val, opt.original);
             });
             item.prepend(expander);
         }
@@ -173,7 +179,7 @@
                 full_path = (path ? path + '.' : path) + key;
 
             if (isObject(json[key]) || isArray(json[key])) {
-                addExpander(item);
+                addExpander(item, opt);
                 if (full_path in expanded) {
                     item.addClass('expanded');
                 }
@@ -256,7 +262,7 @@
             feed(opt.original, (path ? path + '.' : '') + key, val);
             if ((isObject(val) || isArray(val)) && !$.isEmptyObject(val)) {
                 construct(opt, val, item, (path ? path + '.' : '') + key);
-                addExpander(item);
+                addExpander(item, opt);
             } else {
                 item.find('.expander, .item').remove();
             }
