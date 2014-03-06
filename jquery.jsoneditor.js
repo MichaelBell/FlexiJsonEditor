@@ -29,24 +29,27 @@
 		
         var K = function () { },
             onchange = options.change || K,
-            onvalchange = options.valchange || K;
-            onexpandchange = options.expandchange || K;
+            onvalchange = options.valchange || K,
+            onexpandchange = options.expandchange || K,
+            constructfilter = options.constructfilter || function() { return true; },
+            pathSplitChar = options.pathSplitChar || '.';
 
         return this.each(function() {
-            JSONEditor($(this), json, onchange, onvalchange, onexpandchange, options.propertyElement, options.valueElement);
+            JSONEditor($(this), json, onchange, onvalchange, onexpandchange, constructfilter, options.propertyElement, options.valueElement, pathSplitChar);
         });
-
     };
 
-    function JSONEditor(target, json, onchange, onvalchange, onexpandchange, propertyElement, valueElement) {
+    function JSONEditor(target, json, onchange, onvalchange, onexpandchange, constructfilter, propertyElement, valueElement, pathSplitChar) {
         var opt = {
             target: target,
             onchange: onchange,
             onvalchange: onvalchange,
             onexpandchange: onexpandchange,
+            constructfilter: constructfilter,
             original: json,
             propertyElement: propertyElement,
-            valueElement: valueElement
+            valueElement: valueElement,
+            pathSplitChar: pathSplitChar
         };
         construct(opt, json, opt.target);
         $('.property, .value', opt.target).live('blur focus', function() {
@@ -65,13 +68,13 @@
     // object at `path` will be deleted from `o`.
     // Example:
     //      feed({}, 'foo.bar.baz', 10);    // returns { foo: { bar: { baz: 10 } } }
-    function feed(o, path, value) {
+    function feed(o, path, value, pathSplitChar) {
         var del = arguments.length == 2;
 
-        if (path.indexOf('.') > -1) {
+        if (path.indexOf(pathSplitChar) > -1) {
             var diver = o,
                 i = 0,
-                parts = path.split('.');
+                parts = path.split(pathSplitChar);
             for (var len = parts.length; i < len - 1; i++) {
                 diver = diver[parts[i]];
             }
@@ -88,8 +91,8 @@
     // Example:
     //     def({ foo: { bar: 5 } }, 'foo.bar', 100);   // returns 5
     //     def({ foo: { bar: 5 } }, 'foo.baz', 100);   // returns 100
-    function def(o, path, defaultValue) {
-        path = path.split('.');
+    function def(o, path, defaultValue, pathSplitChar) {
+        path = path.split(pathSplitChar);
         var i = 0;
         while (i < path.length) {
             if ((o = o[path[i++]]) == undefined) return defaultValue;
@@ -122,7 +125,7 @@
                     path = item.data('path');
 
                 item.toggleClass('expanded');
-                opt.onexpandchange(item.hasClass('expanded'), (path ? path + '.' : '') + key, val, opt.original);
+                opt.onexpandchange(item.hasClass('expanded'), (path ? path + opt.pathSplitChar : '') + key, val, opt.original);
             });
             item.prepend(expander);
         }
@@ -134,7 +137,7 @@
         root.find('.item').each(function () {
             if ($(this).hasClass('expanded')) {
                 var path = $(this).data('path');
-                var full_path = (path ? path + '.' : path) + $(this).children('.property').attr('title');
+                var full_path = (path ? path + opt.pathSplitChar : path) + $(this).children('.property').attr('title');
                 expanded[full_path] = true;
             }
         });
@@ -163,9 +166,10 @@
         for (var i = 0; i < keys_len; i++) {
             var key = sorted_keys[i];
             if (!json.hasOwnProperty(key)) continue;
+            if (!opt.constructfilter(opt, json, key)) continue;
 
             var displayKey = key;
-            if (key.indexOf('.') != -1)
+            if (key.indexOf(opt.pathSplitChar) != -1)
             {
                 var newKey = key.replace(/\./g, '\t');
                 json[newKey] = json[key];
@@ -176,7 +180,7 @@
             var item     = $('<div>',   { 'class': 'item', 'data-path': path }),
                 property =   $(opt.propertyElement || '<input>', { 'class': 'property' }),
                 value    =   $(opt.valueElement || '<input>', { 'class': 'value'    }),
-                full_path = (path ? path + '.' : path) + key;
+                full_path = (path ? path + opt.pathSplitChar : path) + key;
 
             if (isObject(json[key]) || isArray(json[key])) {
                 addExpander(item, opt);
@@ -221,8 +225,8 @@
     function updateParents(el, opt) {
         $(el).parentsUntil(opt.target).each(function() {
             var path = $(this).data('path');
-            path = (path ? path + '.' : path) + $(this).children('.property').val();
-            var val = stringify(def(opt.original, path, null));
+            path = (path ? path + opt.pathSplitChar : path) + $(this).children('.property').val();
+            var val = stringify(def(opt.original, path, null, opt.pathSplitChar));
             $(this).children('.value').val(val).attr('title', val);
         });
     }
@@ -236,8 +240,8 @@
 
             $(this).attr('title', newKey);
 
-            feed(opt.original, (path ? path + '.' : '') + oldKey);
-            if (newKey) feed(opt.original, (path ? path + '.' : '') + newKey, val);
+            feed(opt.original, (path ? path + opt.pathSplitChar : '') + oldKey, opt.pathSplitChar);
+            if (newKey) feed(opt.original, (path ? path + opt.pathSplitChar : '') + newKey, val, opt.pathSplitChar);
 
             updateParents(this, opt);
 
@@ -257,11 +261,11 @@
             if (this.type == 'checkbox')
                 val = this.checked;
 
-            opt.onvalchange((path ? path + '.' : '') + key, val, opt.original);
+            opt.onvalchange((path ? path + opt.pathSplitChar : '') + key, val, opt.original);
 
-            feed(opt.original, (path ? path + '.' : '') + key, val);
+            feed(opt.original, (path ? path + opt.pathSplitChar : '') + key, val, opt.pathSplitChar);
             if ((isObject(val) || isArray(val)) && !$.isEmptyObject(val)) {
-                construct(opt, val, item, (path ? path + '.' : '') + key);
+                construct(opt, val, item, (path ? path + opt.pathSplitChar : '') + key);
                 addExpander(item, opt);
             } else {
                 item.find('.expander, .item').remove();
